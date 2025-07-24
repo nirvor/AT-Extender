@@ -38,7 +38,7 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 LOGIN_URL = "https://login.alditalk-kundenbetreuung.de/signin/XUI/#login/"
 DASHBOARD_URL = "https://www.alditalk-kundenportal.de/portal/auth/uebersicht/"
 
-VERSION = "1.2.0"  # Deine aktuelle Version
+VERSION = "1.2.2"  # Deine aktuelle Version
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/Dinobeiser/AT-Extender/main/version.txt"  # Link zur Version
 REMOTE_SCRIPT_URL = "https://raw.githubusercontent.com/Dinobeiser/AT-Extender/main/at-extender.py"  # Link zum neuesten Skript
@@ -166,13 +166,58 @@ def wait_and_click(page, selector, timeout=5000, retries=5):
 
 def handle_cookie_banner(page):
     try:
-        cookie_selector = 'button[data-testid="uc-deny-all-button"]'
-        if page.query_selector(cookie_selector):
-            logging.info("Achtung vor dem Krümelmonster.")
-            wait_and_click(page, cookie_selector)
-            logging.info("Nom Nom Nom")
+        deny_selector = 'button[data-testid="uc-deny-all-button"]'
+        try:
+            button = page.query_selector(deny_selector)
+            if button and button.is_visible():
+                logging.info("Achtung Krümelmonster")
+                button.click()
+                time.sleep(1)
+                if not button.is_visible():
+                    logging.info("Cookie geschlossen (Banner verschwunden).")
+                else:
+                    logging.warning("Geklickt, aber Button scheint noch da zu sein.")
+                return
+        except Exception:
+            logging.info("Keine Arme, keine Kekse.")
+
+        deny_keywords = ["Verweigern", "Ablehnen", "Decline"]
+        buttons = page.query_selector_all("button")
+
+        for button in buttons:
+            try:
+                text = button.text_content().strip().lower()
+                if any(keyword.lower() in text for keyword in deny_keywords):
+                    if button.is_visible():
+                        logging.info(f" Cookie Text gefunden: '{text}'")
+                        try:
+                            button.click()
+                            time.sleep(1)
+                            if not button.is_visible():
+                                logging.info("Cookie geschlossen (Banner verschwunden).")
+                            else:
+                                logging.warning("Geklickt, aber Button scheint noch da zu sein.")
+                        except Exception as click_error:
+                            logging.warning(f"Cookie konnte nicht geschlossen werden: {click_error}")
+                        return
+            except Exception:
+                continue
+
+        logging.info("Nom Nom Nom")
     except Exception as e:
-        logging.warning(f"Cookie Fenster nicht klickbar: {e}")
+        logging.warning(f"Fehler im handle_cookie_banner:  {e}")
+
+def goto_and_handle_cookies(page, url, wait_until="domcontentloaded", sleep_after=0):
+    page.goto(url, wait_until=wait_until)
+    if sleep_after:
+        time.sleep(sleep_after)
+    handle_cookie_banner(page)
+
+def wait_and_handle_cookies(page, state="domcontentloaded", sleep_after=0):
+    page.wait_for_load_state(state)
+    if sleep_after:
+        time.sleep(sleep_after)
+    handle_cookie_banner(page)
 
 
 def get_datenvolumen(page):
@@ -249,6 +294,7 @@ def get_datenvolumen(page):
     return GB, is_community_plus
 
 
+
 def login_and_check_data():
     global LAST_GB
     with sync_playwright() as p:
@@ -257,6 +303,8 @@ def login_and_check_data():
                 COOKIE_FILE = "cookies.json"
                 logging.info(f"Starte {BROWSER}...")
                 LAUNCH_ARGS = get_launch_args(BROWSER)
+
+                proxy_settings = {"server": "http://127.0.0.1:8080"}
 
                 # Browser starten
                 if BROWSER == "firefox":
@@ -286,16 +334,12 @@ def login_and_check_data():
                         return False
 
                 # Dashboard aufrufen
-                page.goto(DASHBOARD_URL, wait_until="domcontentloaded")
-                time.sleep(3)
-                handle_cookie_banner(page)
+                goto_and_handle_cookies(page, DASHBOARD_URL, sleep_after=3)
 
                 # Prüfen ob auf Login-Seite umgeleitet wurde
                 if "login" in page.url:
                     logging.info("Nicht eingeloggt - Login wird durchgeführt...")
-                    page.goto(LOGIN_URL)
-                    page.wait_for_load_state("domcontentloaded")
-                    handle_cookie_banner(page)
+                    goto_and_handle_cookies(page, LOGIN_URL)
 
                     logging.info("Fülle Login-Daten aus...")
                     page.fill('#input-5', RUFNUMMER)
@@ -306,8 +350,6 @@ def login_and_check_data():
 
                     logging.info("Warte auf Login...")
                     time.sleep(8)
-                    page.wait_for_load_state("domcontentloaded")
-                    handle_cookie_banner(page)
 
                     if login_erfolgreich(page):
                         logging.info("Login erfolgreich - Cookies werden gespeichert.")
@@ -325,9 +367,7 @@ def login_and_check_data():
                             logging.info("Alte Cookies wurden gelöscht, da ungültig.")
 
                         # Versuche Login erneut
-                        page.goto(LOGIN_URL)
-                        page.wait_for_load_state("domcontentloaded")
-                        handle_cookie_banner(page)
+                        goto_and_handle_cookies(page, LOGIN_URL)
 
                         logging.info("Fülle Login-Daten aus (Fallback)...")
                         page.fill('#input-5', RUFNUMMER)
@@ -338,8 +378,7 @@ def login_and_check_data():
 
                         logging.info("Warte auf Login... (Fallback)")
                         time.sleep(8)
-                        page.wait_for_load_state("domcontentloaded")
-                        handle_cookie_banner(page)
+
 
                         if login_erfolgreich(page):
                             logging.info("Fallback-Login erfolgreich neue Cookies werden gespeichert.")
@@ -369,7 +408,6 @@ def login_and_check_data():
 
                 interval = get_interval(config)
 
-
                 if GB < 1.0:
                     logging.info("Versuche, 1 GB Datenvolumen nachzubuchen...")
 
@@ -387,28 +425,53 @@ def login_and_check_data():
                     clicked = False
                     for selector in selectors:
                         try:
-                            button = page.query_selector(selector)
-                            if button and "1 GB" in button.text_content():
-                                if wait_and_click(page, selector):
-                                    logging.info(f"Nachbuchungsbutton geklickt über Selector: {selector}")
-                                    message = f"{RUFNUMMER}: Aktuelles Datenvolumen: {GB:.2f} GB - 1 GB wurde erfolgreich nachgebucht. 📲"
-                                    send_telegram_message(message)
-                                    clicked = True
-                                    break
+                            elements = page.query_selector_all(selector)
+                            for button in elements:
+                                if not button or not button.is_visible():
+                                    continue
+                                text = button.text_content().strip()
+                                if "1 GB" in text or "1 GB" in text:
+                                    if wait_and_click(page, selector):
+                                        logging.info(f"Nachbuchungsbutton geklickt über Selector: {selector}")
+                                        message = f"{RUFNUMMER}: Aktuelles Datenvolumen: {GB:.2f} GB – 1 GB wurde erfolgreich nachgebucht. 📲"
+                                        send_telegram_message(message)
+                                        clicked = True
+                                        break
+                            if clicked:
+                                break
                         except Exception as e:
-                            logging.warning(f"❌ Fehler beim Versuch mit Selector {selector}: {e}")
+                            logging.warning(f"Fehler beim klicken: {e}")
 
                     if not clicked:
-                        raise Exception("❌ Kein gültiger 1 GB-Button gefunden oder kein Klick möglich.")
-                    interval = get_interval(config)
-                    return interval
+                        logging.info("Button nicht gefunden, Seite wird durchsuchst...")
+                        try:
+                            all_buttons = page.query_selector_all("one-button")
+                            for btn in all_buttons:
+                                try:
+                                    if not btn or not btn.is_visible():
+                                        continue
+                                    text = btn.text_content().strip()
+                                    logging.debug(f"Button-Text beim Durchlauf: {text}")
+                                    if "1 GB" in text or "1 GB" in text:
+                                        btn.click()
+                                        logging.info("Fallback erfolgreich.")
+                                        send_telegram_message(f"{RUFNUMMER}: Über Trick17 1 GB nachgebucht. 📲")
+                                        clicked = True
+                                        break
+                                except Exception:
+                                    continue
+                        except Exception as fallback_error:
+                            logging.warning(f"Fehler bei der Fallback Suche: {fallback_error}")
+
+                    if not clicked:
+                        raise Exception("Kein gültiger 1 GB Button gefunden – auch Fallback versagte.")
 
                 else:
                     logging.info(f"Aktuelles Datenvolumen: {GB:.2f} GB")
                     send_telegram_message(f"{RUFNUMMER}: Noch {GB:.2f} GB übrig. Nächster Run in {interval} Sekunden. ✅")
 
-
                 return get_interval(config)
+
 
             except Exception as e:
                 logging.error(f"Fehler im Versuch {attempt+1}: {e}")
@@ -421,7 +484,7 @@ def login_and_check_data():
 
             time.sleep(2)
         logging.error("Skript hat nach 3 Versuchen aufgegeben.")
-
+        return get_interval(config)
 
 def get_smart_interval():
     if LAST_GB >= 10:
@@ -471,4 +534,4 @@ if __name__ == "__main__":
         logging.info("Starte neuen Durchlauf...")
         interval = login_and_check_data()
         logging.info(f"💤 Warte {interval} Sekunden...")
-        time.sleep(interval)
+        time.sleep(interval if interval is not None else 90)
