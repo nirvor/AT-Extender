@@ -22,7 +22,7 @@ services:
       - AUTO_UPDATE=${AUTO_UPDATE:-1}
       - SLEEP_MODE=${SLEEP_MODE:-smart}
       - SLEEP_INTERVAL=${SLEEP_INTERVAL:-70}
-      - BROWSER=${BROWSER:-chromium}
+      - BROWSER=${BROWSER:-firefox}
       
       # Docker-specific settings
       - HEADLESS=true
