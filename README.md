@@ -88,7 +88,7 @@ Erstelle eine Datei namens `config.json` im gleichen Verzeichnis wie das Skript 
   "AUTO_UPDATE": "1",
   "SLEEP_MODE": "random",
   "SLEEP_INTERVAL": "70",
-  "BROWSER": "chromium"
+  "BROWSER": "firefox"
 }
 ```
 
@@ -103,7 +103,7 @@ Erstelle eine Datei namens `config.json` im gleichen Verzeichnis wie das Skript 
 | `TELEGRAM`        | `1` für Telegram-Nachrichten, `0` für deaktivieren                          |
 | `SLEEP_MODE`      | Steuert, wie lange das Skript nach jedem Durchlauf pausiert: <br><br> `"random"` - Zufälliges Intervall zwischen ca. 5-8 Minuten. <br> `"fixed"` - Nutzt das feste Intervall aus `SLEEP_INTERVAL` in Sekunden. <br> `"smart"` - Dynamisch an das verbleibende Datenvolumen angepasst
 | `SLEEP_INTERVAL`  | Intervall in Sekunden (nur relevant bei `"fixed"`), **min. 70 Sekunden**    |
-| `BROWSER`         | `"chromium"` (Standard) oder `"firefox"`                                    |
+| `BROWSER`         | `"firefox"` (Standard) oder `"chromium"`                                    |
 | Hinweis: Manche Server-configs funktionieren stabiler mit "firefox" - ideal für schwächere Instanzen oder wenn input-6/help-text nicht geladen werden. |
 
 ---
