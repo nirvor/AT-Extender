@@ -8,6 +8,7 @@ import os
 import sys
 import io
 import re
+from playwright_stealth import stealth_sync
 try:
     import psutil
 except ImportError:
@@ -403,6 +404,7 @@ def login_and_check_data():
                     context = browser.new_context(user_agent=USER_AGENT)
 
                 page = context.new_page()
+                stealth_sync(page)
 
                 # Hilfsfunktion: prüfen, ob eingeloggt anhand Überschrift
                 def login_erfolgreich(p):
@@ -422,8 +424,8 @@ def login_and_check_data():
                     goto_and_handle_cookies(page, LOGIN_URL)
 
                     logging.info("Fülle Login-Daten aus...")
-                    page.fill('#input-5', RUFNUMMER)
-                    page.fill('#input-6', PASSWORT)
+                    page.type('#input-5', RUFNUMMER, delay=100)
+                    page.type('#input-6', PASSWORT, delay=120)
 
                     if not wait_and_click(page, 'one-button[data-type="main-action"] button'):
                         raise Exception("Login-Button konnte nicht geklickt werden.")
@@ -615,6 +617,7 @@ if __name__ == "__main__":
         interval = login_and_check_data()
         logging.info(f"💤 Warte {interval} Sekunden...")
         time.sleep(interval if interval is not None else 90)
+
 
 
 
