@@ -425,7 +425,7 @@ def login_and_check_data():
                     page.fill('#input-5', RUFNUMMER)
                     page.fill('#input-6', PASSWORT)
 
-                    if not wait_and_click(page, 'one-button[data-type="main-action"]'):
+                    if not wait_and_click(page, 'one-button[data-type="main-action"] button'):
                         raise Exception("Login-Button konnte nicht geklickt werden.")
 
                     logging.info("Warte auf Login...")
@@ -615,6 +615,7 @@ if __name__ == "__main__":
         interval = login_and_check_data()
         logging.info(f"💤 Warte {interval} Sekunden...")
         time.sleep(interval if interval is not None else 90)
+
 
 
 
