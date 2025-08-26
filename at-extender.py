@@ -36,7 +36,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 LOGIN_URL = "https://login.alditalk-kundenbetreuung.de/signin/XUI/#login/"
-DASHBOARD_URL = "https://www.alditalk-kundenportal.de/portal/auth/uebersicht/"
+DASHBOARD_URL = "https://www.alditalk-kundenportal.de/user/auth/account-overview/"
 
 VERSION = "1.2.2"  # Deine aktuelle Version
 
@@ -429,7 +429,7 @@ def login_and_check_data():
                         raise Exception("Login-Button konnte nicht geklickt werden.")
 
                     logging.info("Warte auf Login...")
-                    time.sleep(8)
+                    time.sleep(15)
 
                     if login_erfolgreich(page):
                         logging.info("Login erfolgreich - Cookies werden gespeichert.")
@@ -615,3 +615,4 @@ if __name__ == "__main__":
         interval = login_and_check_data()
         logging.info(f"💤 Warte {interval} Sekunden...")
         time.sleep(interval if interval is not None else 90)
+
