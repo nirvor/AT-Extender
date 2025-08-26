@@ -8,7 +8,7 @@ import os
 import sys
 import io
 import re
-from playwright_stealth import stealth_sync
+from playwright_stealth import sync_stealth
 try:
     import psutil
 except ImportError:
@@ -404,7 +404,7 @@ def login_and_check_data():
                     context = browser.new_context(user_agent=USER_AGENT)
 
                 page = context.new_page()
-                stealth_sync(page)
+                sync_stealth(page)
 
                 # Hilfsfunktion: prüfen, ob eingeloggt anhand Überschrift
                 def login_erfolgreich(p):
@@ -617,6 +617,7 @@ if __name__ == "__main__":
         interval = login_and_check_data()
         logging.info(f"💤 Warte {interval} Sekunden...")
         time.sleep(interval if interval is not None else 90)
+
 
 
 
