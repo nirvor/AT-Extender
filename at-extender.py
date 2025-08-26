@@ -35,8 +35,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
-LOGIN_URL = "https://www.alditalk-kundenportal.de/portal/auth/uebersicht/"
-#"https://login.alditalk-kundenbetreuung.de/signin/XUI/#login/"
+LOGIN_URL = "https://login.alditalk-kundenbetreuung.de/signin/XUI/#login/"
 DASHBOARD_URL = "https://www.alditalk-kundenportal.de/user/auth/account-overview/"
 
 VERSION = "1.2.2"  # Deine aktuelle Version
@@ -616,5 +615,6 @@ if __name__ == "__main__":
         interval = login_and_check_data()
         logging.info(f"💤 Warte {interval} Sekunden...")
         time.sleep(interval if interval is not None else 90)
+
 
 
