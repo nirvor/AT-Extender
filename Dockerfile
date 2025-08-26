@@ -6,6 +6,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Install system dependencies required for Playwright
+# This list is from your file and is correct
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
@@ -38,29 +39,28 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright and browsers
-RUN playwright install --with-deps
+# Install Playwright browsers WITHOUT system dependencies, as they are manually installed above
+RUN playwright install
 
 # Copy application code
 COPY . .
 
-# Create directories for data persistence
+# Create directories for data persistence (as used in at-extender.py)
 RUN mkdir -p /app/data
 
-# Set proper permissions
+# Set proper permissions (excellent practice from your file)
 RUN useradd -m -u 1000 atextender && \
     chown -R atextender:atextender /app
 USER atextender
 
-# Health check
+# Health check (this is valid because healthcheck.py exists in your repo)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python healthcheck.py || exit 1
 
 # Expose port (if needed for future web interface)
 EXPOSE 8080
 
-# Set the entrypoint
-ENTRYPOINT ["python", "at-extender.py"]
+# Set the correct entrypoint to run your script
+CMD ["python", "at-extender.py"]
